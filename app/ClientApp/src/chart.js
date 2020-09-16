@@ -1,6 +1,10 @@
 import * as d3 from "d3";
 
 const parseTime = d3.timeParse("%Y-%m-%d");
+const bisectDate = d3.bisector(function (d) {
+  return d.Date;
+}).left;
+const dateFormatter = d3.timeFormat("%Y-%m-%d");
 
 let chart = {},
   x,
@@ -27,6 +31,7 @@ chart.create = (el, props, state) => {
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   x = d3.scaleTime().rangeRound([0, width]);
   y = d3.scaleLinear().rangeRound([height, 0]);
+
   line = d3
     .line()
     .x(function (d) {
@@ -99,6 +104,63 @@ chart.draw = function (svg, data, title) {
     .attr("text-anchor", "middle")
     .style("font-size", "16px")
     .text(title);
+
+  var focus = svg.append("g").attr("class", "focus").style("display", "none");
+
+  focus.append("circle").attr("r", 5);
+
+  focus
+    .append("rect")
+    .attr("class", "tooltip")
+    .attr("width", 100)
+    .attr("height", 50)
+    .attr("x", 10)
+    .attr("y", -22)
+    .attr("rx", 4)
+    .attr("ry", 4);
+
+  focus
+    .append("text")
+    .attr("class", "tooltip-date")
+    .attr("x", 18)
+    .attr("y", -2);
+
+  focus.append("text").attr("x", 18).attr("y", 18).text("Cases:");
+
+  focus
+    .append("text")
+    .attr("class", "tooltip-cases")
+    .attr("x", 60)
+    .attr("y", 18);
+
+  svg
+    .append("rect")
+    .attr("class", "overlay")
+    .attr("width", width)
+    .attr("height", height)
+    .on("mouseover", function () {
+      focus.style("display", null);
+    })
+    .on("mouseout", function () {
+      focus.style("display", "none");
+    })
+    .on("mousemove", mousemove);
+
+  function mousemove(event) {
+    var x0 = x.invert(d3.pointer(event)[0]),
+      i = bisectDate(data, x0, 1),
+      d0 = data[i - 1],
+      d1 = data[i],
+      d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
+    focus.attr(
+      "transform",
+      "translate(" + x(d.Date) + "," + y(d.Confirmed) + ")"
+    );
+    focus.select(".tooltip-date").text(dateFormatter(d.Date));
+    focus.select(".tooltip-cases").text(d.Confirmed);
+    // focus.select(".tooltip-date").text(dateFormatter(d.Date));
+    // focus.select(".tooltip-cases").text(formatValue(d.Confirmed));
+  }
 };
 
 chart.cleanUp = function (el) {

@@ -105,7 +105,7 @@ chart.draw = function (svg, data, title) {
     .style("font-size", "16px")
     .text(title);
 
-  var focus = svg.append("g").attr("class", "focus").style("display", "none");
+  var focus = g.append("g").attr("class", "focus").style("display", "none");
 
   focus.append("circle").attr("r", 5);
 
@@ -138,6 +138,7 @@ chart.draw = function (svg, data, title) {
     .attr("class", "overlay")
     .attr("width", width)
     .attr("height", height)
+    .attr("transform", g.attr("transform"))
     .on("mouseover", function () {
       focus.style("display", null);
     })
@@ -148,7 +149,7 @@ chart.draw = function (svg, data, title) {
 
   function mousemove(event) {
     var x0 = x.invert(d3.pointer(event)[0]),
-      i = bisectDate(data, x0, 1),
+      i = bisectDate(data, x0, 1, data.length - 1),
       d0 = data[i - 1],
       d1 = data[i],
       d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
@@ -158,8 +159,6 @@ chart.draw = function (svg, data, title) {
     );
     focus.select(".tooltip-date").text(dateFormatter(d.Date));
     focus.select(".tooltip-cases").text(d.Confirmed);
-    // focus.select(".tooltip-date").text(dateFormatter(d.Date));
-    // focus.select(".tooltip-cases").text(formatValue(d.Confirmed));
   }
 };
 

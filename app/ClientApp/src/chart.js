@@ -38,7 +38,7 @@ chart.create = (el, props, state) => {
       return x(d.Date);
     })
     .y(function (d) {
-      return y(d.Confirmed);
+      return y(d.Data);
     });
 
   chart.update(state);
@@ -47,17 +47,28 @@ chart.create = (el, props, state) => {
 chart.update = (state) => {
   let svg = d3.select("svg");
 
-  chart.draw(svg, state.data, state.title);
+  state.data.forEach((element) => {
+    chart.parseData(element.data);
+  });
+
+  chart.drawAxis(svg, state.data[0].data, state.title);
+  state.data.forEach((element) => {
+    chart.drawLine(element.data);
+  });
+
+  chart.addTooltip(svg, state.data);
 };
 
-chart.draw = function (svg, data, title) {
-  this.cleanUp();
-
+chart.parseData = function (data) {
   data.forEach(function (d) {
     d.Date = parseTime(d.Date);
-    d.Confirmed = +d.Confirmed;
+    d.Data = +d.Data;
     return d;
   });
+};
+
+chart.drawAxis = function (svg, data, title) {
+  this.cleanUp();
 
   x.domain(
     d3.extent(data, function (d) {
@@ -67,7 +78,7 @@ chart.draw = function (svg, data, title) {
   y.domain([
     0,
     d3.max(data, function (d) {
-      return d.Confirmed + 1000;
+      return d.Data + 1000;
     }),
   ]);
 
@@ -84,9 +95,18 @@ chart.draw = function (svg, data, title) {
     .attr("transform", "rotate(-90)")
     .attr("y", 6)
     .attr("dy", "0.71em")
-    .attr("text-anchor", "end")
-    .text("Confirmed cases");
+    .attr("text-anchor", "end");
 
+  g.append("text")
+    .attr("class", "chart-title")
+    .attr("x", width / 2)
+    .attr("y", 0)
+    .attr("text-anchor", "middle")
+    .style("font-size", "16px")
+    .text(title);
+};
+
+chart.drawLine = function (data) {
   g.append("path")
     .attr("class", "chart-line")
     .datum(data)
@@ -96,42 +116,41 @@ chart.draw = function (svg, data, title) {
     .attr("stroke-linecap", "round")
     .attr("stroke-width", 1.5)
     .attr("d", line);
+};
 
-  g.append("text")
-    .attr("class", "chart-title")
-    .attr("x", width / 2)
-    .attr("y", 0)
-    .attr("text-anchor", "middle")
-    .style("font-size", "16px")
-    .text(title);
+chart.addTooltip = function (svg, data) {
+  let tooltips = [];
+  data.forEach((element) => {
+    var focus = g.append("g").attr("class", "focus").style("display", "none");
 
-  var focus = g.append("g").attr("class", "focus").style("display", "none");
+    focus.append("circle").attr("r", 5);
 
-  focus.append("circle").attr("r", 5);
+    focus
+      .append("rect")
+      .attr("class", "tooltip")
+      .attr("width", 120)
+      .attr("height", 50)
+      .attr("x", 10)
+      .attr("y", -22)
+      .attr("rx", 4)
+      .attr("ry", 4);
 
-  focus
-    .append("rect")
-    .attr("class", "tooltip")
-    .attr("width", 100)
-    .attr("height", 50)
-    .attr("x", 10)
-    .attr("y", -22)
-    .attr("rx", 4)
-    .attr("ry", 4);
+    focus
+      .append("text")
+      .attr("class", "tooltip-date")
+      .attr("x", 18)
+      .attr("y", -2);
 
-  focus
-    .append("text")
-    .attr("class", "tooltip-date")
-    .attr("x", 18)
-    .attr("y", -2);
+    focus.append("text").attr("x", 18).attr("y", 18).text(element.title);
 
-  focus.append("text").attr("x", 18).attr("y", 18).text("Cases:");
+    focus
+      .append("text")
+      .attr("class", "tooltip-cases")
+      .attr("x", 90)
+      .attr("y", 18);
 
-  focus
-    .append("text")
-    .attr("class", "tooltip-cases")
-    .attr("x", 60)
-    .attr("y", 18);
+    tooltips.push(focus);
+  });
 
   svg
     .append("rect")
@@ -140,25 +159,31 @@ chart.draw = function (svg, data, title) {
     .attr("height", height)
     .attr("transform", g.attr("transform"))
     .on("mouseover", function () {
-      focus.style("display", null);
+      tooltips.forEach((focus) => {
+        focus.style("display", null);
+      });
     })
     .on("mouseout", function () {
-      focus.style("display", "none");
+      tooltips.forEach((focus) => {
+        focus.style("display", "none");
+      });
     })
     .on("mousemove", mousemove);
 
   function mousemove(event) {
-    var x0 = x.invert(d3.pointer(event)[0]),
-      i = bisectDate(data, x0, 1, data.length - 1),
-      d0 = data[i - 1],
-      d1 = data[i],
-      d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
-    focus.attr(
-      "transform",
-      "translate(" + x(d.Date) + "," + y(d.Confirmed) + ")"
-    );
-    focus.select(".tooltip-date").text(dateFormatter(d.Date));
-    focus.select(".tooltip-cases").text(d.Confirmed);
+    for (var j = 0; j < data.length; j++) {
+      var x0 = x.invert(d3.pointer(event)[0]),
+        i = bisectDate(data[j].data, x0, 1, data[j].data.length - 1),
+        d0 = data[j].data[i - 1],
+        d1 = data[j].data[i],
+        d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
+      tooltips[j].attr(
+        "transform",
+        "translate(" + x(d.Date) + "," + y(d.Data) + ")"
+      );
+      tooltips[j].select(".tooltip-date").text(dateFormatter(d.Date));
+      tooltips[j].select(".tooltip-cases").text(d.Data);
+    }
   }
 };
 

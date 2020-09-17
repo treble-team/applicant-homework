@@ -12,7 +12,6 @@ class ChartD3 extends Component {
 
   componentDidMount() {
     let el = this.ref.current;
-
     chart.create(
       el,
       {

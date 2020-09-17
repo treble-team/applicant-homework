@@ -5,43 +5,34 @@ import data from "./corona-data-fi.json";
 // @ts-ignore
 import * as _ from "lodash";
 
-interface PointData {
-  Date: string;
-  Data: number;
+interface IPointData {
+  date: string;
+  data: number;
 }
 
-interface ChartLine {
-  title: string;
-  data: PointData[];
+interface IChartLine {
+  tooltipTitle: string;
+  lineData: IPointData[];
 }
 
 function App() {
-  let chartData: ChartLine[] = [
+  let chartData: IChartLine[] = [
     {
-      title: "Confirmed",
-      data: data.data.timeline
+      tooltipTitle: "Confirmed",
+      lineData: data.data.timeline
         .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
         .map((day) => ({
-          Date: day.date,
-          Data: day.confirmed,
+          date: day.date,
+          data: day.confirmed,
         })),
     },
     {
-      title: "Deaths",
-      data: data.data.timeline
+      tooltipTitle: "Deaths",
+      lineData: data.data.timeline
         .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
         .map((day) => ({
-          Date: day.date,
-          Data: day.deaths,
-        })),
-    },
-    {
-      title: "recovered",
-      data: data.data.timeline
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-        .map((day) => ({
-          Date: day.date,
-          Data: day.recovered,
+          date: day.date,
+          data: day.deaths,
         })),
     },
   ];
@@ -52,7 +43,7 @@ function App() {
       <div>
         <ChartD3
           data={_.cloneDeep(chartData)}
-          title={"COVID-19 numbers in Finland"}
+          chartTitle={"COVID-19 numbers in Finland"}
         />
       </div>
     </div>

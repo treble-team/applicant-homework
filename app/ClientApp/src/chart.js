@@ -2,7 +2,7 @@ import * as d3 from "d3";
 
 const parseTime = d3.timeParse("%Y-%m-%d");
 const bisectDate = d3.bisector(function (d) {
-  return d.Date;
+  return d.date;
 }).left;
 const dateFormatter = d3.timeFormat("%Y-%m-%d");
 
@@ -35,10 +35,10 @@ chart.create = (el, props, state) => {
   line = d3
     .line()
     .x(function (d) {
-      return x(d.Date);
+      return x(d.date);
     })
     .y(function (d) {
-      return y(d.Data);
+      return y(d.data);
     });
 
   chart.update(state);
@@ -47,13 +47,13 @@ chart.create = (el, props, state) => {
 chart.update = (state) => {
   let svg = d3.select("svg");
 
-  state.data.forEach((element) => {
-    chart.parseData(element.data);
+  state.data.forEach((chartLine) => {
+    chart.parseData(chartLine.lineData);
   });
 
-  chart.drawAxis(svg, state.data[0].data, state.title);
-  state.data.forEach((element) => {
-    chart.drawLine(element.data);
+  chart.drawAxis(svg, state.data[0].lineData, state.chartTitle);
+  state.data.forEach((chartLine) => {
+    chart.drawLine(chartLine.lineData);
   });
 
   chart.addTooltip(svg, state.data);
@@ -61,24 +61,24 @@ chart.update = (state) => {
 
 chart.parseData = function (data) {
   data.forEach(function (d) {
-    d.Date = parseTime(d.Date);
-    d.Data = +d.Data;
+    d.date = parseTime(d.date);
+    d.data = +d.data;
     return d;
   });
 };
 
-chart.drawAxis = function (svg, data, title) {
+chart.drawAxis = function (svg, lineData, chartTitle) {
   this.cleanUp();
 
   x.domain(
-    d3.extent(data, function (d) {
-      return d.Date;
+    d3.extent(lineData, function (d) {
+      return d.date;
     })
   );
   y.domain([
     0,
-    d3.max(data, function (d) {
-      return d.Data + 1000;
+    d3.max(lineData, function (d) {
+      return d.data + 1000;
     }),
   ]);
 
@@ -103,13 +103,13 @@ chart.drawAxis = function (svg, data, title) {
     .attr("y", 0)
     .attr("text-anchor", "middle")
     .style("font-size", "16px")
-    .text(title);
+    .text(chartTitle);
 };
 
-chart.drawLine = function (data) {
+chart.drawLine = function (lineData) {
   g.append("path")
     .attr("class", "chart-line")
-    .datum(data)
+    .datum(lineData)
     .attr("fill", "none")
     .attr("stroke", "steelblue")
     .attr("stroke-linejoin", "round")
@@ -118,9 +118,9 @@ chart.drawLine = function (data) {
     .attr("d", line);
 };
 
-chart.addTooltip = function (svg, data) {
+chart.addTooltip = function (svg, chartLines) {
   let tooltips = [];
-  data.forEach((element) => {
+  chartLines.forEach((chartLine) => {
     var focus = g.append("g").attr("class", "focus").style("display", "none");
 
     focus.append("circle").attr("r", 5);
@@ -141,7 +141,11 @@ chart.addTooltip = function (svg, data) {
       .attr("x", 18)
       .attr("y", -2);
 
-    focus.append("text").attr("x", 18).attr("y", 18).text(element.title);
+    focus
+      .append("text")
+      .attr("x", 18)
+      .attr("y", 18)
+      .text(chartLine.tooltipTitle);
 
     focus
       .append("text")
@@ -171,18 +175,23 @@ chart.addTooltip = function (svg, data) {
     .on("mousemove", mousemove);
 
   function mousemove(event) {
-    for (var j = 0; j < data.length; j++) {
+    for (var j = 0; j < chartLines.length; j++) {
       var x0 = x.invert(d3.pointer(event)[0]),
-        i = bisectDate(data[j].data, x0, 1, data[j].data.length - 1),
-        d0 = data[j].data[i - 1],
-        d1 = data[j].data[i],
-        d = x0 - d0.Date > d1.Date - x0 ? d1 : d0;
+        i = bisectDate(
+          chartLines[j].lineData,
+          x0,
+          1,
+          chartLines[j].lineData.length - 1
+        ),
+        d0 = chartLines[j].lineData[i - 1],
+        d1 = chartLines[j].lineData[i],
+        d = x0 - d0.date > d1.date - x0 ? d1 : d0;
       tooltips[j].attr(
         "transform",
-        "translate(" + x(d.Date) + "," + y(d.Data) + ")"
+        "translate(" + x(d.date) + "," + y(d.data) + ")"
       );
-      tooltips[j].select(".tooltip-date").text(dateFormatter(d.Date));
-      tooltips[j].select(".tooltip-cases").text(d.Data);
+      tooltips[j].select(".tooltip-date").text(dateFormatter(d.date));
+      tooltips[j].select(".tooltip-cases").text(d.data);
     }
   }
 };

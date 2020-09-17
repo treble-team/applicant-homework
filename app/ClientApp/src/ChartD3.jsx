@@ -33,7 +33,7 @@ class ChartD3 extends Component {
   getChartState() {
     return {
       data: this.props.data,
-      title: this.props.title,
+      chartTitle: this.props.chartTitle,
     };
   }
 

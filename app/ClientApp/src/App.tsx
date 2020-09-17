@@ -1,9 +1,11 @@
-import React from "react";
 import "./App.css";
-import ChartD3 from "./ChartD3";
-import data from "./corona-data-fi.json";
+
 // @ts-ignore
 import * as _ from "lodash";
+import React from "react";
+
+import ChartD3 from "./ChartD3";
+import useApiService, { CoronaObject } from "./apiService";
 
 interface IPointData {
   date: string;
@@ -15,39 +17,49 @@ interface IChartLine {
   lineData: IPointData[];
 }
 
-function App() {
-  let chartData: IChartLine[] = [
-    {
-      tooltipTitle: "Confirmed",
-      lineData: data.data.timeline
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-        .map((day) => ({
-          date: day.date,
-          data: day.confirmed,
-        })),
-    },
-    {
-      tooltipTitle: "Deaths",
-      lineData: data.data.timeline
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-        .map((day) => ({
-          date: day.date,
-          data: day.deaths,
-        })),
-    },
-  ];
+const App: React.FC = () => {
+  const service = useApiService();
+
+  const getData = (data: CoronaObject[]): IChartLine[] => {
+    var result = [
+      {
+        tooltipTitle: "Confirmed",
+        lineData: data
+          .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+          .map((day) => ({
+            date: day.date.substring(0, 10),
+            data: day.confirmed,
+          })),
+      },
+      {
+        tooltipTitle: "Deaths",
+        lineData: data
+          .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+          .map((day) => ({
+            date: day.date.substring(0, 10),
+            data: day.deaths,
+          })),
+      },
+    ];
+
+    return result;
+  };
 
   return (
     <div className="App">
       <header className="App-header"></header>
       <div>
-        <ChartD3
-          data={_.cloneDeep(chartData)}
-          chartTitle={"COVID-19 numbers in Finland"}
-        />
+        {service.status === "loading" && <div>Loading...</div>}
+        {service.status === "loaded" && (
+          <ChartD3
+            data={_.cloneDeep(getData(service.payload))}
+            chartTitle={"COVID-19 numbers in Finland"}
+          />
+        )}
+        {service.status === "error" && <div>Error loading the data.</div>}
       </div>
     </div>
   );
-}
+};
 
 export default App;

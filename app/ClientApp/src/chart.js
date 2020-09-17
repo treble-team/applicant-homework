@@ -15,7 +15,7 @@ let chart = {},
   g;
 
 chart.create = (el, props, state) => {
-  const margin = { top: 20, right: 20, bottom: 30, left: 50 };
+  const margin = { top: 20, right: 150, bottom: 30, left: 50 };
 
   let svg = d3
     .select(el)
@@ -159,7 +159,7 @@ chart.addTooltip = function (svg, chartLines) {
   svg
     .append("rect")
     .attr("class", "overlay")
-    .attr("width", width)
+    .attr("width", width + 100)
     .attr("height", height)
     .attr("transform", g.attr("transform"))
     .on("mouseover", function () {
